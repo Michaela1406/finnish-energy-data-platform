@@ -1,0 +1,3 @@
+"""
+Fingrid data ingestion package.
+"""
