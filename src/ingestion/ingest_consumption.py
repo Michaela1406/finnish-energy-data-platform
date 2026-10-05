@@ -3,12 +3,16 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fingrid_client import FingridClient
-from utils.logging import get_logger
-from utils.config import get_api_key, get_config
 
-logger = get_logger(__name__)
+import sys
+sys.path.append("src/utils")
 
-CONSUMPTION_DATASET_ID = 1234  # Replace with the actual dataset ID for consumption data
+from config import get_api_key
+from logging import getLogger
+
+logger = getLogger(__name__)
+
+CONSUMPTION_DATASET_ID = 193  # Replace with the actual dataset ID for consumption data
 
 RAW_DATA_PATH = Path("raw_data/consumption")  # Replace with the desired path for raw consumption data
 
