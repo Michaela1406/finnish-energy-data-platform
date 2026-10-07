@@ -2,15 +2,12 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fingrid_client import FingridClient
+from src.ingestion.fingrid_client import FingridClient
 
-import sys
-sys.path.append("src/utils")
+from src.utils.config import get_api_key
+from src.utils.logging import get_logger
 
-from config import get_api_key
-from logging import getLogger
-
-logger = getLogger(__name__)
+logger = get_logger(__name__)
 
 CONSUMPTION_DATASET_ID = 193  # Replace with the actual dataset ID for consumption data
 

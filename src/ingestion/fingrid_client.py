@@ -12,7 +12,7 @@ class FingridClient:
 
     BASE_URL = "https://data.fingrid.fi/api"
 
-    def __init__(self, api_key: str, timeout: int = 10):
+    def __init__(self, api_key: str, timeout: int = 50):
         self.api_key = api_key
         self.timeout = timeout
 
@@ -31,6 +31,7 @@ class FingridClient:
         params = {
             "startTime": start_time.isoformat(),
             "endTime": end_time.isoformat(),
+            "page": 2,
         }
 
         headers = {
