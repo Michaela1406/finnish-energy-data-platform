@@ -116,7 +116,6 @@ finnish-energy-data-platform/
 │   │   └── ingest_consumption.py
 │   │
 │   └── utils/
-│       ├── __init__.py
 │       ├── config.py
 │       └── logging.py
 │
