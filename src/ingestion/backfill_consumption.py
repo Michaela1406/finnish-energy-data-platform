@@ -189,7 +189,7 @@ def backfill_consumption(
     print(f"Reports saved to: {REPORT_DIR}")
 
 if __name__ == "__main__":
-    end_date = date(2026,10,1)
-    start_date = date(2026,10,1)
+    end_date = date(2026,10,3)
+    start_date = date(2026,10,2)
     
     backfill_consumption(start_date=start_date, end_date=end_date)

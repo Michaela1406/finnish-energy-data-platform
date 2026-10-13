@@ -18,16 +18,19 @@ class FingridClient:
     """Client for interacting with the Fingrid Open Data API."""
 
     BASE_URL = "https://data.fingrid.fi/api"
+    
 
     def __init__(self, api_key: str, timeout: int = 50):
         self.api_key = api_key
         self.timeout = timeout
 
+
     def get_dataset(
         self,
         dataset_id: int,
         start_time: datetime,
-        end_time: datetime
+        end_time: datetime,
+        TESTING: bool = False,
     ) -> list[dict[str, Any]]:
         """
         Retrieve a Fingrid dataset for a given time range.
@@ -65,10 +68,11 @@ class FingridClient:
                 ) from e
 
             result = response.json()
-            print("Page:", page)
-            print("Response keys:", result.keys())
-            print("Pagination:", result.get("pagination"))
-            print("Records returned:", len(result.get("data", [])))
+            if TESTING: 
+                print("Page:", page)
+                print("Response keys:", result.keys())
+                print("Pagination:", result.get("pagination"))
+                print("Records returned:", len(result.get("data", [])))
             
             page_data = result.get("data", [])
             pagination = result.get("pagination", {})
