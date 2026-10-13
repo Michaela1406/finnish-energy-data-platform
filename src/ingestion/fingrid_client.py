@@ -1,3 +1,5 @@
+from unittest import result
+
 import requests
 from datetime import datetime
 from typing import Any
@@ -63,6 +65,10 @@ class FingridClient:
                 ) from e
 
             result = response.json()
+            print("Page:", page)
+            print("Response keys:", result.keys())
+            print("Pagination:", result.get("pagination"))
+            print("Records returned:", len(result.get("data", [])))
             
             page_data = result.get("data", [])
             pagination = result.get("pagination", {})
@@ -80,7 +86,7 @@ class FingridClient:
 
             page += 1
             
-            time.sleep(2) # Sleep for 2 seconds between requests to avoid hitting rate limits
+            time.sleep(3) # Sleep for 3 seconds between requests to avoid hitting rate limits
 
         logger.info(
             f"Retrieved all pages: {len(all_data)} records for dataset {dataset_id}"

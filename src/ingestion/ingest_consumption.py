@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 CONSUMPTION_DATASET_ID = 193  # Replace with the actual dataset ID for consumption data
 
-RAW_DATA_PATH = Path("raw_data/consumption")  # Replace with the desired path for raw consumption data
+RAW_DATA_PATH = Path("raw_data/consumption/ingestion")  # Replace with the desired path for raw consumption data
 
 def ingest_consumption(
     start_time: datetime,
