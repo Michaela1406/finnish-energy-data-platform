@@ -20,6 +20,9 @@ REPORT_DIR = Path("raw_data/consumption/reports")
 
 TESTING = False
 
+START_DATE = date(2026, 10, 6)  # Example start date for backfill
+END_DATE = date(2026, 10, 10)  # Example end date for backfill
+
 
 def utc_day_window(day: date):
     """Return the UTC start and end of a calendar day."""
@@ -98,11 +101,32 @@ def write_csv(path: Path, rows: list[dict]):
 
     if not rows:
         return
+    
+    if not path.exists():
+        with path.open("w", newline="", encoding="utf-8") as write_file:
+            writer = csv.DictWriter(write_file, fieldnames=list(rows[0].keys()))
+            writer.writeheader()
+            writer.writerows(rows)
+        return
 
-    with path.open("w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+    else: 
+        with path.open("r", newline="", encoding="utf-8") as file:
+            reader = csv.DictReader(file, fieldnames=list(rows[0].keys()))
+            if reader.fieldnames is None:
+                with path.open("w", newline="", encoding="utf-8") as write_file:
+                    writer = csv.DictWriter(write_file, fieldnames=list(rows[0].keys()))
+                    writer.writeheader()
+                    writer.writerows(rows)
+            elif reader.fieldnames == list(rows[0].keys()):
+                with path.open("a", newline="", encoding="utf-8") as write_file:
+                    appender = csv.DictWriter(write_file, fieldnames=list(rows[0].keys()))
+                    appender.writerows(rows)
+            elif reader.fieldnames != list(rows[0].keys()):
+                print(f"Fieldnames do not match for file {path}")
+                print(f"Expected fieldnames: {list(rows[0].keys())}, but got: {reader.fieldnames}")
+            else:
+                print(f"Unexpected condition for file {path}")
+
 
 
 def backfill_consumption(
@@ -189,7 +213,7 @@ def backfill_consumption(
     print(f"Reports saved to: {REPORT_DIR}")
 
 if __name__ == "__main__":
-    end_date = date(2026,10,3)
-    start_date = date(2026,10,2)
+    end_date = END_DATE
+    start_date = START_DATE
     
     backfill_consumption(start_date=start_date, end_date=end_date)

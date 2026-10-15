@@ -18,7 +18,8 @@ class FingridClient:
     """Client for interacting with the Fingrid Open Data API."""
 
     BASE_URL = "https://data.fingrid.fi/api"
-    
+    REQUEST_DELAY_SECONDS = 3
+    MAX_RETRIES = 5
 
     def __init__(self, api_key: str, timeout: int = 50):
         self.api_key = api_key
@@ -52,20 +53,48 @@ class FingridClient:
                 "page": page,
             }
 
-            try:
-                response = requests.get(
-                    url,
-                    params=params,
-                    headers=headers,
-                    timeout=self.timeout,
-                )
 
-                response.raise_for_status()
+            for attempt in range(self.MAX_RETRIES + 1):
+                try:
+                    response = requests.get(
+                        url,
+                        params=params,
+                        headers=headers,
+                        timeout=self.timeout,
+                    )
 
-            except requests.RequestException as e:
-                raise FingridAPIError(
-                    f"Failed to retrieve dataset {dataset_id}, page {page}: {e}"
-                ) from e
+                    if response.status_code == 429:
+                        if attempt == self.MAX_RETRIES:
+                            response.raise_for_status()
+
+                        retry_after = response.headers.get("Retry-After")
+
+                        try:
+                            wait_seconds = float(retry_after)
+                        except (TypeError, ValueError):
+                            wait_seconds = self.REQUEST_DELAY_SECONDS * (2 ** attempt)
+
+                        wait_seconds = max(wait_seconds, self.REQUEST_DELAY_SECONDS)
+
+                        logger.warning(
+                            "Fingrid rate limit reached on page %s. "
+                            "Retrying in %.1f seconds (attempt %s/%s).",
+                            page,
+                            wait_seconds,
+                            attempt + 1,
+                            self.MAX_RETRIES,
+                        )
+                        time.sleep(wait_seconds)
+                        continue
+
+                    response.raise_for_status()
+                    break
+
+                except requests.RequestException as e:
+                    raise FingridAPIError(
+                        f"Failed to retrieve dataset {dataset_id}, "
+                        f"page {page}: {e}"
+                    ) from e
 
             result = response.json()
             if TESTING: 
