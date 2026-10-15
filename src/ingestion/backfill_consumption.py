@@ -20,8 +20,8 @@ REPORT_DIR = Path("raw_data/consumption/reports")
 
 TESTING = False
 
-START_DATE = date(2026, 10, 6)  # Example start date for backfill
-END_DATE = date(2026, 10, 10)  # Example end date for backfill
+START_DATE = date(2026, 9, 15)  # Example start date for backfill
+END_DATE = date(2026, 9, 29)  # Example end date for backfill
 
 
 def utc_day_window(day: date):
@@ -153,46 +153,56 @@ def backfill_consumption(
     current_day = start_date
 
     while current_day <= end_date:
-        start_time, end_time = utc_day_window(current_day)
-
-        print(f"Backfilling {current_day.isoformat()} UTC")
-
-        # If this raises an API error, stop rather than report a
-        # failed request as a day with zero source records.
-        records = client.get_dataset(
-            dataset_id=DATASET_ID,
-            start_time=start_time,
-            end_time=end_time,
-        )
 
         # Save every successful response, including days with gaps.
         filename = f"consumption_{current_day:%Y%m%d}.json"
-        save_json(BACKFILL_DIR / filename, records)
+        output_path = BACKFILL_DIR / filename
 
-        report, missing, unexpected = analyse_day(
-            current_day, records
-        )
-        daily_reports.append(report)
-
-        for timestamp in missing:
-            missing_rows.append({
-                "date_utc": current_day.isoformat(),
-                "missing_start_time_utc": timestamp.isoformat(),
-            })
-
-        for timestamp in unexpected:
-            unexpected_rows.append({
-                "date_utc": current_day.isoformat(),
-                "unexpected_start_time_utc": timestamp.isoformat(),
-            })
-
-        if TESTING:
-            print(
-                f"  received={report['records_received']}, "
-                f"unique_expected={report['unique_expected_intervals']}, "
-                f"missing={report['missing_intervals']}, "
-                f"completeness={report['completeness_pct']}%"
+        if output_path.exists():
+            logger.info(
+                "Skipping %s: output file already exists",
+                current_day,
             )
+            
+        else:
+            start_time, end_time = utc_day_window(current_day)
+            
+            print(f"Backfilling {current_day.isoformat()} UTC")
+    
+            # If this raises an API error, stop rather than report a
+            # failed request as a day with zero source records.
+            records = client.get_dataset(
+                dataset_id=DATASET_ID,
+                start_time=start_time,
+                end_time=end_time,
+            )
+                    
+            save_json(BACKFILL_DIR / filename, records)
+
+            report, missing, unexpected = analyse_day(
+                current_day, records
+            )
+            daily_reports.append(report)
+
+            for timestamp in missing:
+                missing_rows.append({
+                    "date_utc": current_day.isoformat(),
+                    "missing_start_time_utc": timestamp.isoformat(),
+                })
+
+            for timestamp in unexpected:
+                unexpected_rows.append({
+                    "date_utc": current_day.isoformat(),
+                    "unexpected_start_time_utc": timestamp.isoformat(),
+                })
+
+            if TESTING:
+                print(
+                    f"  received={report['records_received']}, "
+                    f"unique_expected={report['unique_expected_intervals']}, "
+                    f"missing={report['missing_intervals']}, "
+                    f"completeness={report['completeness_pct']}%"
+                )
 
         current_day += timedelta(days=1)
 
