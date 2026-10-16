@@ -4,7 +4,7 @@ from pathlib import Path
 
 from src.ingestion.fingrid_client import FingridClient
 
-from src.utils.config import get_api_key
+from src.utils.config import get_api_key, get_latest_bronze_timestamp
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -45,10 +45,42 @@ def ingest_consumption(
 
     logger.info(f"Finished ingestion for consumption data. Data saved to {output_path}")
     
-if __name__ == "__main__":
-    end_time = datetime.now(timezone.utc)
-    start_time = end_time - timedelta(days=1)
     
+from datetime import datetime, timedelta, timezone
+
+
+def get_incremental_window():
+    logger.info("Determining the incremental ingestion window based on the latest bronze timestamp.")
+    
+    latest_timestamp = get_latest_bronze_timestamp()
+
+    if latest_timestamp is None:
+        # First run: choose a sensible initial backfill window.
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=1)
+    else:
+        # Handle a datetime returned by the SQL connector.
+        if isinstance(latest_timestamp, str):
+            latest_timestamp = datetime.fromisoformat(
+                latest_timestamp.replace("Z", "+00:00")
+            )
+
+        if latest_timestamp.tzinfo is None:
+            latest_timestamp = latest_timestamp.replace(
+                tzinfo=timezone.utc
+            )
+
+        # Re-fetch recent records to capture late updates.
+        start_time = latest_timestamp - timedelta(minutes=30)
+        end_time = datetime.now(timezone.utc)
+        
+        logger.info(f"Incremental ingestion window determined: start_time={start_time}, end_time={end_time}")
+
+    return start_time, end_time
+    
+if __name__ == "__main__":
+    start_time, end_time = get_incremental_window()
+
     ingest_consumption(start_time=start_time, end_time=end_time)
 
     

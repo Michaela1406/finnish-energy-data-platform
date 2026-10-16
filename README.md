@@ -96,11 +96,11 @@ The project currently uses Fingrid dataset **193 — electricity consumption**.
 As the project grows, I plan to explore:
 
 - Azure Data Lake Storage
-- Incremental data ingestion
+- Incremental data ingestion (ongoing)
 - Databricks Jobs / orchestration
 - Data quality monitoring
 - CI/CD with GitHub Actions
-- Larger-scale historical datasets
+- Larger-scale historical datasets (ongoing)
 
 ---
 
@@ -110,8 +110,12 @@ As the project grows, I plan to explore:
 finnish-energy-data-platform/
 │
 ├── src/
+│   ├── debugging/
+│   │   ├── databricks_api_investigation.py
+│   │   └── raw_data_investigation.py
 │   ├── ingestion/
 │   │   ├── __init__.py
+│   │   ├── backfill_consumption.py
 │   │   ├── fingrid_client.py
 │   │   └── ingest_consumption.py
 │   │
@@ -120,9 +124,9 @@ finnish-energy-data-platform/
 │       └── logging.py
 │
 ├── databricks/
-│   ├── 01_bronze_consumption.py
-│   ├── 02_silver_consumption.py
-│   └── 03_gold_consumption.py
+│   ├── 01_bronze_consumption.ipynb
+│   ├── 02_silver_consumption.ipynb
+│   └── 03_gold_consumption.ipynb
 │
 ├── tests/ //To be implemented
 │
@@ -260,7 +264,7 @@ Invalid records are stored separately in a quarantine table together with inform
 - [x] Basic data validation
 - [x] Quarantine for invalid records
 - [x] Gold aggregation layer
-- [ ] Expand historical dataset
+- [x] Expand historical dataset
 - [ ] Improve incremental ingestion
 
 ### Milestone 2 — Scale and automation

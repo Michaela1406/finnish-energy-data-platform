@@ -198,7 +198,7 @@ def backfill_consumption(
 
             if TESTING:
                 print(
-                    f"  received={report['records_received']}, "
+                    f"received={report['records_received']}, "
                     f"unique_expected={report['unique_expected_intervals']}, "
                     f"missing={report['missing_intervals']}, "
                     f"completeness={report['completeness_pct']}%"
