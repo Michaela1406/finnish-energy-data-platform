@@ -6,7 +6,7 @@ The project demonstrates an end-to-end data pipeline from API ingestion to analy
 
 > **Project status: Milestone 1 — in progress**
 >
-> The first milestone focuses on establishing the core ingestion pipeline and Databricks medallion architecture. The project will be expanded with larger datasets, incremental processing, Azure services, data quality checks and orchestration.
+> The first milestone focuses on establishing the core ingestion pipeline and Databricks medallion architecture. The project will be expanded with larger datasets, incremental processing, data quality checks and orchestration.
 
 ---
 
@@ -95,7 +95,6 @@ The project currently uses Fingrid dataset **193 — electricity consumption**.
 
 As the project grows, I plan to explore:
 
-- Azure Data Lake Storage
 - Incremental data ingestion (ongoing)
 - Databricks Jobs / orchestration
 - Data quality monitoring
@@ -113,9 +112,11 @@ finnish-energy-data-platform/
 │   ├── debugging/
 │   │   ├── databricks_api_investigation.py
 │   │   └── raw_data_investigation.py
+│   │
 │   ├── ingestion/
 │   │   ├── __init__.py
 │   │   ├── backfill_consumption.py
+│   │   ├── databricks_volume.py
 │   │   ├── fingrid_client.py
 │   │   └── ingest_consumption.py
 │   │
@@ -265,15 +266,15 @@ Invalid records are stored separately in a quarantine table together with inform
 - [x] Quarantine for invalid records
 - [x] Gold aggregation layer
 - [x] Expand historical dataset
-- [ ] Improve incremental ingestion
+- [x] Improve incremental ingestion
 
 ### Milestone 2 — Scale and automation
 
 Planned:
 
-- [ ] Larger historical dataset
-- [ ] Incremental ingestion
-- [ ] Azure storage
+- [x] Larger historical dataset
+- [x] Incremental ingestion
+- [x] Raw file automated upload to Databricks as part of incremental ingestion
 - [ ] More robust data quality checks
 - [ ] Automated pipeline execution
 - [ ] CI/CD with GitHub Actions

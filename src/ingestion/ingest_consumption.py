@@ -7,11 +7,15 @@ from src.ingestion.fingrid_client import FingridClient
 from src.utils.config import get_api_key, get_latest_bronze_timestamp
 from src.utils.logging import get_logger
 
+from src.ingestion.databricks_volume import upload_raw_file
+
 logger = get_logger(__name__)
 
 CONSUMPTION_DATASET_ID = 193  # Replace with the actual dataset ID for consumption data
 
 RAW_DATA_PATH = Path("raw_data/consumption/ingestion")  # Replace with the desired path for raw consumption data
+
+VOLUME_SUB_DIRECTORY = "ingestion"
 
 def ingest_consumption(
     start_time: datetime,
@@ -44,6 +48,8 @@ def ingest_consumption(
         
 
     logger.info(f"Finished ingestion for consumption data. Data saved to {output_path}")
+    
+    return output_path
     
     
 from datetime import datetime, timedelta, timezone
@@ -81,7 +87,9 @@ def get_incremental_window():
 if __name__ == "__main__":
     start_time, end_time = get_incremental_window()
 
-    ingest_consumption(start_time=start_time, end_time=end_time)
+    output_path = ingest_consumption(start_time=start_time, end_time=end_time)
+    upload_raw_file(local_path=output_path, volume_directory=VOLUME_SUB_DIRECTORY)
+    
 
     
     
