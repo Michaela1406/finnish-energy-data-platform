@@ -1,5 +1,4 @@
 import logging
-from unicodedata import name
 
 def get_logger(name: str) -> logging.Logger:
     """Create and configure a project logger."""
