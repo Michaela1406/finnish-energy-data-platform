@@ -1,6 +1,6 @@
-from unittest import result
-
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 from datetime import datetime
 from typing import Any
 import time
@@ -8,6 +8,28 @@ import time
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+def create_session() -> requests.Session:
+    retry_policy = Retry(
+        total=5,
+        connect=3,
+        read=3,
+        status=5,
+        allowed_methods=frozenset(["GET"]),
+        status_forcelist=[429, 500, 502, 503, 504],
+        backoff_factor=1,
+        backoff_jitter=0.5,
+        backoff_max=30,
+        respect_retry_after_header=True,
+        retry_after_max=60,
+    )
+
+    adapter = HTTPAdapter(max_retries=retry_policy)
+
+    session = requests.Session()
+    session.mount("https://", adapter)
+
+    return session
 
 
 class FingridAPIError(Exception):
@@ -19,26 +41,24 @@ class FingridClient:
 
     BASE_URL = "https://data.fingrid.fi/api"
     REQUEST_DELAY_SECONDS = 3
-    MAX_RETRIES = 5
 
     def __init__(self, api_key: str, timeout: int = 50):
         self.api_key = api_key
         self.timeout = timeout
-
-
+        self.session = create_session()
+    
+    
     def get_dataset(
         self,
         dataset_id: int,
         start_time: datetime,
         end_time: datetime,
-        TESTING: bool = False,
     ) -> list[dict[str, Any]]:
         """
         Retrieve a Fingrid dataset for a given time range.
         """
 
         url = f"{self.BASE_URL}/datasets/{dataset_id}/data"
-        
         headers = {
                     "x-api-key": self.api_key
                 }
@@ -52,74 +72,83 @@ class FingridClient:
                 "endTime": end_time.isoformat(),
                 "page": page,
             }
+            
+            try: 
+                response = self.session.get(
+                    url,
+                    params=params,
+                    headers=headers,
+                    timeout=self.timeout,
+                )
+                
+                response.raise_for_status()
+            
+            except requests.RequestException as e:
+                logger.exception(
+                    "Request failed for dataset %s, page %s",
+                    dataset_id,
+                    page,
+                )
+                raise FingridAPIError(
+                    f"Failed to retrieve dataset {dataset_id}, "
+                    f"page {page}: {e}"
+                ) from e
 
-
-            for attempt in range(self.MAX_RETRIES + 1):
-                try:
-                    response = requests.get(
-                        url,
-                        params=params,
-                        headers=headers,
-                        timeout=self.timeout,
-                    )
-
-                    if response.status_code == 429:
-                        if attempt == self.MAX_RETRIES:
-                            response.raise_for_status()
-
-                        retry_after = response.headers.get("Retry-After")
-
-                        try:
-                            wait_seconds = float(retry_after)
-                        except (TypeError, ValueError):
-                            wait_seconds = self.REQUEST_DELAY_SECONDS * (2 ** attempt)
-
-                        wait_seconds = max(wait_seconds, self.REQUEST_DELAY_SECONDS)
-
-                        logger.warning(
-                            "Fingrid rate limit reached on page %s. "
-                            "Retrying in %.1f seconds (attempt %s/%s).",
-                            page,
-                            wait_seconds,
-                            attempt + 1,
-                            self.MAX_RETRIES,
-                        )
-                        time.sleep(wait_seconds)
-                        continue
-
-                    response.raise_for_status()
-                    break
-
-                except requests.RequestException as e:
-                    raise FingridAPIError(
-                        f"Failed to retrieve dataset {dataset_id}, "
-                        f"page {page}: {e}"
-                    ) from e
-
-            result = response.json()
-            if TESTING: 
-                print("Page:", page)
-                print("Response keys:", result.keys())
-                print("Pagination:", result.get("pagination"))
-                print("Records returned:", len(result.get("data", [])))
+            try:
+                result = response.json()
+                
+            except requests.JSONDecodeError as e:
+                raise FingridAPIError(
+                    f"Failed to decode JSON for dataset {dataset_id}, "
+                    f"page {page}: {e}"
+                ) from e
+                
+            if not isinstance(result, dict):
+                raise FingridAPIError(
+                    f"Unexpected response format for dataset {dataset_id}, "
+                    f"page {page}: expected a JSON object"
+                )
+            
+            logger.debug("Page: %s", page)
+            logger.debug("Response keys: %s", result.keys())
+            logger.debug("Pagination: %s", result.get("pagination"))
+            logger.debug("Records returned: %s", len(result.get("data", [])))
             
             page_data = result.get("data", [])
             pagination = result.get("pagination", {})
+            
+            if not isinstance(page_data, list):
+                raise FingridAPIError(
+                    f"Missing or invalid 'data' list for dataset "
+                    f"{dataset_id}, page {page}"
+                )
+
+            if not isinstance(pagination, dict):
+                raise FingridAPIError(
+                    f"Missing or invalid pagination metadata for dataset "
+                    f"{dataset_id}, page {page}"
+                )
             
             all_data.extend(page_data)
             
             logger.info(
                 f"Retrieved page {page}: {len(page_data)} records"
             )
-            
-            per_page = pagination.get("perPage", 10)
+
+            per_page = pagination.get("perPage")
+
+            if not isinstance(per_page, int) or per_page <= 0:
+                raise FingridAPIError(
+                    f"Invalid pagination page size for dataset {dataset_id}, "
+                    f"page {page}"
+                )
 
             if len(page_data) < per_page:
                 break
 
             page += 1
             
-            time.sleep(3) # Sleep for 3 seconds between requests to avoid hitting rate limits
+            time.sleep(self.REQUEST_DELAY_SECONDS)
 
         logger.info(
             f"Retrieved all pages: {len(all_data)} records for dataset {dataset_id}"

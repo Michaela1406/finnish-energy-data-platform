@@ -1,2 +1,20 @@
-requests==2.32.5
-python-dotenv==1.1.1
+
+# HTTP requests to the Fingrid API
+requests>=2.32,<3
+
+# Load configuration and credentials from .env
+python-dotenv>=1.1,<2
+
+# Directly imported for HTTP retry configuration
+urllib3>=2,<3
+
+# Upload raw files to Databricks Volumes
+databricks-sdk
+
+# Query Databricks tables using SQL
+databricks-sql-connector
+
+# CA certificates for secure Databricks SQL connections
+certifi
+
+

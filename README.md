@@ -4,7 +4,7 @@ A data engineering portfolio project built around Finnish electricity consumptio
 
 The project demonstrates an end-to-end data pipeline from API ingestion to analytics using **Python, PySpark, Databricks and Delta Lake**. The goal is to build the project incrementally, starting with a small working pipeline and extending it towards a more production-like data platform.
 
-> **Project status: Milestone 1 — in progress**
+> **Project status: Milestone 2 — in progress**
 >
 > The first milestone focuses on establishing the core ingestion pipeline and Databricks medallion architecture. The project will be expanded with larger datasets, incremental processing, data quality checks and orchestration.
 
@@ -129,10 +129,12 @@ finnish-energy-data-platform/
 │   ├── 02_silver_consumption.ipynb
 │   └── 03_gold_consumption.ipynb
 │
-├── tests/ //To be implemented
+├── tests/
+│       └── test_fingrid_client.py
 │
 ├── .env.example
 ├── .gitignore
+├── requirements-dev.txt
 ├── requirements.txt
 └── README.md
 ```

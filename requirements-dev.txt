@@ -1,0 +1,8 @@
+
+-r requirements.txt
+
+# Run the unit tests
+pytest
+
+# Mock HTTP responses, including error statuses and invalid JSON
+responses
